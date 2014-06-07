@@ -33,6 +33,19 @@ struct Cuboid
 	Objeto o; //Inofrmações de objeto da esfera
 };
 
+void pinta(vec3 normal, vec3 cor, vec3 p) {
+    float difusa = dot(dirLuz, normal);
+    difusa = max(difusa, 0);
+		vec3 vetorLuz = p - dirLuz;
+		vec3 vetorLuzRefletido = reflect(-dirLuz, normalize(normal));
+		float cos_especular = max(0.0,dot(normalize(vetorLuzRefletido), normalize(camPos)));
+		float compEspecular = 32.0;
+		float valorReflexaoEspecular = pow(cos_especular,compEspecular);
+		vec3 corEspecular = valorReflexaoEspecular * vec3(1.0, 1.0, 1.0);
+    gl_FragColor.xyz = cor * 0.2 + cor * difusa * 0.5+0.3*corEspecular;
+    gl_FragColor.a = 1.;
+}
+
 Esfera inicializaEsfera (Esfera esfera){
 	
 	float a;
@@ -65,13 +78,6 @@ Esfera inicializaEsfera (Esfera esfera){
 
 }
 
-void pinta(vec3 normal, vec3 cor) {
-    float difusa = dot(dirLuz, normal);
-    difusa = max(difusa, 0);
-    gl_FragColor.xyz = cor * 0.2 + cor * difusa * 0.8;
-    gl_FragColor.a = 1.;
-}
-
 //####################################################################
 //#############################INTERSECAO#############################
 //####################################################################
@@ -101,7 +107,7 @@ Objeto intersecao(Objeto obj_1, Objeto obj_2, bool final) {
 			objNovo.normalOut = obj_2.normalOut;
 		}
 		if (final) {
-					pinta(objNovo.normalIn,objNovo.cor);
+					pinta(objNovo.normalIn,objNovo.cor,camPos+objNovo.entra*camDir);
 		}
 	} else {
 		objNovo.intercepta = false;
@@ -156,7 +162,7 @@ Objeto uniao(Objeto obj_1, Objeto obj_2, bool final) {
         objNovo.cor = obj_2.cor;
     }
     if (final) {
-					pinta(objNovo.normalIn,objNovo.cor);
+					pinta(objNovo.normalIn,objNovo.cor,camPos+objNovo.entra*camDir);
     }
 
     return objNovo;
@@ -224,7 +230,7 @@ Objeto diferenca(Objeto obj_1, Objeto obj_2, bool final) { // obj_1 - obj_2
         return objNovo;
     }
     if (final) {
-					pinta(objNovo.normalIn,objNovo.cor);
+					pinta(objNovo.normalIn,objNovo.cor,camPos+objNovo.entra*camDir);
     }
 
     return objNovo;
