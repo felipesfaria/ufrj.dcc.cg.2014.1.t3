@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<ShaderLab>
+	<shaders>
+		<vertex>trab3-v00.vert</vertex>
+		<fragment>trab3-v00.frag</fragment>
+	</shaders>
+	<model>
+		<id>4</id>
+	</model>
+</ShaderLab>
