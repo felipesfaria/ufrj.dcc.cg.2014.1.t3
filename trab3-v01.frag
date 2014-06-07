@@ -46,15 +46,14 @@ Esfera inicializaEsfera (Esfera esfera){
  	c = dot(camPos-centro,camPos-centro) - (raio*raio);
 	delta = b*b - a*c;
 
-	vec3 p;
-	float t = (-b-sqrt(delta))/a;
-	esfera.o.entra = (-b-sqrt(delta))/a;
-	esfera.o.sai = (-b+sqrt(delta))/a;
-	p = camPos+t*camDir;
-	vec3 normal=normalize(p-centro);
-	esfera.o.normalIn=normal;
-	esfera.o.normalOut=-normal;
-	float difusa = dot(dirLuz,normal);
+	float tIn = (-b-sqrt(delta))/a;
+	float tOut = (-b+sqrt(delta))/a;
+	esfera.o.entra = tIn;
+	esfera.o.sai = tOut;
+	vec3 pIn = camPos+tIn*camDir;
+	vec3 pOut = camPos+tOut*camDir;
+	esfera.o.normalIn=normalize(pIn-centro);
+	esfera.o.normalOut=normalize(pOut-centro);
 	//delta < 0 está fora da esfera
 	if (delta>0){
 		esfera.o.intercepta=true;
@@ -64,6 +63,13 @@ Esfera inicializaEsfera (Esfera esfera){
 	
  	return esfera;
 
+}
+
+void pinta(vec3 normal, vec3 cor) {
+    float difusa = dot(dirLuz, normal);
+    difusa = max(difusa, 0);
+    gl_FragColor.xyz = cor * 0.2 + cor * difusa * 0.8;
+    gl_FragColor.a = 1.;
 }
 
 //####################################################################
@@ -95,10 +101,7 @@ Objeto intersecao(Objeto obj_1, Objeto obj_2, bool final) {
 			objNovo.normalOut = obj_2.normalOut;
 		}
 		if (final) {
-			difusa = dot(dirLuz, objNovo.normalIn);
-			difusa = max(difusa, 0);
-			gl_FragColor.xyz = objNovo.cor * 0.2 + objNovo.cor * difusa * 0.8;
-			gl_FragColor.a = 1.;
+					pinta(objNovo.normalIn,objNovo.cor);
 		}
 	} else {
 		objNovo.intercepta = false;
@@ -107,6 +110,7 @@ Objeto intersecao(Objeto obj_1, Objeto obj_2, bool final) {
 
 	return objNovo;
 }
+
 //####################################################################
 //#############################UNIAO##################################
 //####################################################################
@@ -117,6 +121,7 @@ Objeto uniao(Objeto obj_1, Objeto obj_2, bool final) {
     if (!obj_1.intercepta && !obj_2.intercepta) { //Não intercepta ninguem
         gl_FragColor.a = 0.;
         objNovo.intercepta = false;
+		    return objNovo;
     }
 
     if (obj_1.intercepta && obj_2.intercepta) { // intercepta os dois
@@ -142,7 +147,7 @@ Objeto uniao(Objeto obj_1, Objeto obj_2, bool final) {
         objNovo.normalIn = obj_1.normalIn;
         objNovo.normalOut = obj_1.normalOut;
         objNovo.cor = obj_1.cor;
-    } else {
+    } else { // so intercepta objeto 2
         objNovo.intercepta = true;
         objNovo.entra = obj_2.entra;
         objNovo.sai = obj_2.sai;
@@ -151,10 +156,75 @@ Objeto uniao(Objeto obj_1, Objeto obj_2, bool final) {
         objNovo.cor = obj_2.cor;
     }
     if (final) {
-        difusa = dot(dirLuz, objNovo.normalIn);
-        difusa = max(difusa, 0);
-        gl_FragColor.xyz = objNovo.cor * 0.2 + objNovo.cor * difusa * 0.8;
-        gl_FragColor.a = 1.;
+					pinta(objNovo.normalIn,objNovo.cor);
+    }
+
+    return objNovo;
+}
+
+//####################################################################
+//#############################DIFERENCA##############################
+//####################################################################
+Objeto diferenca(Objeto obj_1, Objeto obj_2, bool final) { // obj_1 - obj_2
+    Objeto objNovo;
+    float difusa;
+    vec3 cor;
+    if (!obj_1.intercepta && !obj_2.intercepta) { //Não intercepta ninguem
+        gl_FragColor.a = 0.;
+        objNovo.intercepta = false;
+        return objNovo;
+    }
+
+    if (obj_1.intercepta && obj_2.intercepta) { // intercepta os dois
+        if (obj_1.entra < obj_2.entra) { //entrou antes no objeto 1
+            objNovo.intercepta = true;
+            objNovo.entra = obj_1.entra;
+            objNovo.normalIn = obj_1.normalIn;
+            objNovo.cor = obj_1.cor;
+            if (obj_1.sai < obj_2.entra) { //sai do obj_1 antes de entrar no obj_2
+                objNovo.sai = obj_1.sai;
+                objNovo.normalOut = obj_1.normalOut;
+            } else { //entra no obj 2 antes de sair do obj 1
+                objNovo.sai = obj_2.entra;
+                objNovo.normalOut = -obj_2.normalIn;
+            }
+        } else { //entrou antes no objeto 2
+            if (obj_2.sai < obj_1.entra) { //sai do obj 2 antes de entrar no obj 1
+                objNovo.intercepta = true;
+                objNovo.entra = obj_1.entra;
+                objNovo.normalIn = obj_1.normalIn;
+                objNovo.cor = obj_1.cor;
+                objNovo.sai = obj_1.sai;
+                objNovo.normalOut = obj_1.normalOut;
+            } else { //entra no obj 1 antes de sair do obj 2
+                if (obj_1.sai > obj_2.sai) { //sai do obj 1 depois de sair do obj 2
+                    objNovo.intercepta = true;
+                    objNovo.entra = obj_2.sai;
+                    objNovo.normalIn = -obj_2.normalOut;
+                    objNovo.cor = obj_1.cor;
+                    objNovo.sai = obj_1.sai;
+                    objNovo.normalOut = obj_1.normalOut;
+                } else { // sai do obj 1 antes de sair do obj 2
+                    gl_FragColor.a = 0.;
+                    objNovo.intercepta = false;
+                    return objNovo;
+                }
+            }
+        }
+    } else if (obj_1.intercepta) { // so intercepta objeto 1
+        objNovo.intercepta = true;
+        objNovo.entra = obj_1.entra;
+        objNovo.sai = obj_1.sai;
+        objNovo.normalIn = obj_1.normalIn;
+        objNovo.normalOut = obj_1.normalOut;
+        objNovo.cor = obj_1.cor;
+    } else { // so intercepta objeto 2
+        gl_FragColor.a = 0.;
+        objNovo.intercepta = false;
+        return objNovo;
+    }
+    if (final) {
+					pinta(objNovo.normalIn,objNovo.cor);
     }
 
     return objNovo;
@@ -164,23 +234,39 @@ void main(void){
 
 	Esfera esfera1;
 	esfera1.centro=vec3(0.0,0.0,0.0);
-	esfera1.raio=1.0;
+	esfera1.raio=0.7;
 	esfera1.o.cor=vec3(0.0,1.0,0.0);
 	esfera1 = inicializaEsfera(esfera1);
 
 	Esfera esfera2;
-	esfera2.centro=vec3(0.0,1.0,0.0);
-	esfera2.raio=1.0;
+	esfera2.centro=vec3(-0.3,0.4,0.0);
+	esfera2.raio=0.24;
 	esfera2.o.cor=vec3(0.0,0.0,1.0);
 	esfera2 = inicializaEsfera(esfera2);
 
 	Esfera esfera3;
-	esfera3.centro=vec3(1.0,0.0,0.0);
-	esfera3.raio=1.0;
+	esfera3.centro=vec3(0.9,0.0,0.0);
+	esfera3.raio=0.4;
 	esfera3.o.cor=vec3(1.0,0.0,0.0);
 	esfera3 = inicializaEsfera(esfera3);
 
-	Objeto obj_1=intersecao(esfera1.o,esfera2.o,false);
+	Esfera esfera4;
+	esfera4.centro=vec3(-0.4,0.5,0.3);
+	esfera4.raio=0.2;
+	esfera4.o.cor=vec3(1.0,1.0,0.0);
+	esfera4 = inicializaEsfera(esfera4);
 
-	intersecao(obj_1,esfera3.o,true);
+	Esfera esfera5;
+	esfera5.centro=vec3(-0.4,0.5,-0.3);
+	esfera5.raio=0.2;
+	esfera5.o.cor=vec3(1.0,1.0,0.0);
+	esfera5 = inicializaEsfera(esfera5);
+
+	Objeto obj_1=diferenca(esfera1.o,esfera5.o,false);
+
+	obj_1 = uniao(obj_1,esfera3.o,false);
+
+	obj_1 = diferenca(obj_1,esfera4.o,false);
+
+	obj_1 = uniao(obj_1,esfera2.o,true);
 }
