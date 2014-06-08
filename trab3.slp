@@ -2,7 +2,7 @@
 <ShaderLab>
 	<shaders>
 		<vertex>trab3-v00.vert</vertex>
-		<fragment>trab3-v01.frag</fragment>
+		<fragment>trab3-v03.frag</fragment>
 	</shaders>
 	<model>
 		<id>4</id>
