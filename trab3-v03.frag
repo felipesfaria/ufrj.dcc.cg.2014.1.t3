@@ -42,8 +42,7 @@ void pinta(vec3 normal, vec3 cor, vec3 p) {
 		float compEspecular = 32.0;
 		float valorReflexaoEspecular = pow(cos_especular,compEspecular);
 		vec3 corEspecular = valorReflexaoEspecular * vec3(1.0, 1.0, 1.0);
-    //gl_FragColor.xyz = cor * 0.2 + cor * difusa * 0.5+0.3*corEspecular;
-    gl_FragColor.xyz = cor * difusa;
+    gl_FragColor.xyz = cor * 0.2 + cor * difusa * 0.5+0.3*corEspecular;
     //gl_FragColor.xyz = cor;
     gl_FragColor.a = 1.;
 }
@@ -277,9 +276,15 @@ Cuboid inicializaCubo (Cuboid cubo){
 	        cubo.o.intercepta = true;
 	        cubo.o.entra = t1.x;
 	        cubo.o.normalIn = normalize(cubo.v1 - cubo.v2);
-	        pinta(cubo.o.normalIn, cubo.o.cor, pIn);
-	        return cubo;
+
 	    }
+	    pOut = getP(t2.x);
+	    //face 2,4,6,8
+	    if (pOut.y < cubo.v8.y && pOut.y > cubo.v2.y && pOut.z < cubo.v8.z && pOut.z > cubo.v2.z) {
+					cubo.o.sai=t2.x;
+					cubo.o.normalOut = normalize(cubo.v2 - cubo.v1);
+					
+			}
 	} else { //face 2468 antes da face 1357
 	    pOut = getP(t2.x);
 	    //face 2,4,6,8
@@ -287,19 +292,30 @@ Cuboid inicializaCubo (Cuboid cubo){
 	        cubo.o.intercepta = true;
 	        cubo.o.entra = t2.x;
 	        cubo.o.normalIn = normalize(cubo.v2 - cubo.v1);
-	        pinta(cubo.o.normalIn, cubo.o.cor, pOut);
-	        return cubo;
+
+	    }
+	    pIn = getP(t1.x);
+	    //face 1,3,5,7
+	    if (pIn.y > cubo.v1.y && pIn.y < cubo.v7.y && pIn.z > cubo.v1.z && pIn.z < cubo.v7.z) {
+	        cubo.o.sai = t1.x;
+	        cubo.o.normalOut = normalize(cubo.v1 - cubo.v2);
+					 
 	    }
 	}
-	 if (t1.y < t2.y) { //face 1256 antes da face 3478
+	if (t1.y < t2.y) { //face 1256 antes da face 3478
 	    pIn = getP(t1.y);
 	    //face 1 , 2 , 5 , 6
 	    if (pIn.x > cubo.v1.x && pIn.x < cubo.v6.x && pIn.z > cubo.v1.z && pIn.z < cubo.v6.z) {
 	        cubo.o.intercepta = true;
 	        cubo.o.entra = t1.y;
 	        cubo.o.normalIn = normalize(cubo.v1 - cubo.v3);
-	        pinta(cubo.o.normalIn, cubo.o.cor, pIn);
-	        return cubo;
+	    }
+	    pOut = getP(t2.y);
+			//face 3,4,7,8
+	    if (pOut.x < cubo.v8.x && pOut.x > cubo.v3.x && pOut.z < cubo.v8.z && pOut.z > cubo.v3.z) { 
+	        cubo.o.sai = t2.y;
+	        cubo.o.normalOut = normalize(cubo.v3 - cubo.v1);
+					 
 	    }
 	} else { //face 3478 antes da face 1256
 	    pOut = getP(t2.y);
@@ -308,8 +324,13 @@ Cuboid inicializaCubo (Cuboid cubo){
 	        cubo.o.intercepta = true;
 	        cubo.o.entra = t2.y;
 	        cubo.o.normalIn = normalize(cubo.v3 - cubo.v1);
-	        pinta(cubo.o.normalIn, cubo.o.cor, pOut);
-	        return cubo;
+	    }
+	    pIn = getP(t1.y);
+	    //face 1 , 2 , 5 , 6
+	    if (pIn.x > cubo.v1.x && pIn.x < cubo.v6.x && pIn.z > cubo.v1.z && pIn.z < cubo.v6.z) {
+	        cubo.o.sai = t1.y;
+	        cubo.o.normalOut = normalize(cubo.v1 - cubo.v3);
+					 
 	    }
 	}
 	 if (t1.z < t2.z) { //face 1234 antes da face 5678
@@ -319,8 +340,13 @@ Cuboid inicializaCubo (Cuboid cubo){
 	        cubo.o.intercepta = true;
 	        cubo.o.entra = t1.z;
 	        cubo.o.normalIn = normalize(cubo.v1 - cubo.v5);
-	        pinta(cubo.o.normalIn, cubo.o.cor, pIn);
-	        return cubo;
+	    }
+	    pOut = getP(t2.z);
+			//face 5,6,7,8
+	    if (pOut.x < cubo.v8.x && pOut.x > cubo.v5.x && pOut.y < cubo.v8.y && pOut.y > cubo.v5.y) { 
+	        cubo.o.sai = t2.z;
+	        cubo.o.normalOut = normalize(cubo.v5 - cubo.v1);
+					 
 	    }
 	} else { //face 5678 antes da face 1234
 	    pOut = getP(t2.z);
@@ -329,10 +355,16 @@ Cuboid inicializaCubo (Cuboid cubo){
 	        cubo.o.intercepta = true;
 	        cubo.o.entra = t2.z;
 	        cubo.o.normalIn = normalize(cubo.v5 - cubo.v1);
-	        pinta(cubo.o.normalIn, cubo.o.cor, pOut);
-	        return cubo;
+	    }
+	    pIn = getP(t1.z);
+			//face 1 , 2 , 3 , 4
+	    if (pIn.x > cubo.v1.x && pIn.x < cubo.v4.x && pIn.y > cubo.v1.y && pIn.y < cubo.v4.y) { 
+	        cubo.o.sai = t1.z;
+	        cubo.o.normalOut = normalize(cubo.v1 - cubo.v5);
+					 
 	    }
 	}
+
 	return cubo;
 }
 
@@ -345,13 +377,13 @@ Objeto escala(Objeto obj, float s){
 void main(void){
 	Cuboid cubo1;
 	cubo1.v1=vec3(-0.5,-0.5,-0.5);
-	cubo1.v8=vec3(1.0,1.0,1.0);
+	cubo1.v8=vec3(0.5,0.5,0.5);
 	cubo1.o.cor=vec3(0.0,0.0,1.0);
 	cubo1 = inicializaCubo(cubo1);
 
 	Esfera esfera1;
-	esfera1.centro=vec3(0.75,0.0,0.0);
-	esfera1.raio=0.25;
+	esfera1.centro=vec3(0.0,0.0,0.0);
+	esfera1.raio=0.6;
 	esfera1.o.cor=vec3(0.0,1.0,0.0);
 	esfera1 = inicializaEsfera(esfera1);
 
@@ -379,5 +411,5 @@ void main(void){
 	esfera5.o.cor=vec3(0.0,1.0,1.0);
 	esfera5 = inicializaEsfera(esfera5);
 
-	//Objeto obj_1=uniao(esfera1.o,cubo1.o,true);
+	Objeto obj_1=diferenca(esfera1.o,cubo1.o,true);
 }
