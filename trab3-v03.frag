@@ -6,8 +6,13 @@ varying vec3 camDir;
 struct Objeto
 {
 	bool intercepta; //O raio intercepta esse objeto?
+	int nIntercepta; //Quantas vezes o raio intercepta o objeto
 	float entra; //t quando o raio entra no objeto no ponto p=camPos+t*camDir
 	float sai; //t quando o raio sai do objeto no ponto p=camPos+t*camDir
+	float entra2; //segundo ponto de entrada quando intercepta o objeto duas vezes
+	float sai2; //segundo ponto de saida quando intercepta o objeto duas vezes
+	float entra3; //terceiro ponto de entrada quando intercepta o objeto tres vezes
+	float sai3; //terceiro ponto de saida quando intercepta o objeto duas vezes
 	vec3 normalIn;  //Normal para fora do objeto no ponto de entrada
 	vec3 normalOut; //Normal para fora do objeto no ponto de saida
 	vec3 cor; //Cor do Objeto
@@ -51,6 +56,9 @@ vec3 getP(float t){
 	return camPos+t*camDir;
 }
 
+//####################################################################
+//#############################Esfera#################################
+//####################################################################
 Esfera inicializaEsfera (Esfera esfera){
 	
 	float a;
@@ -81,6 +89,136 @@ Esfera inicializaEsfera (Esfera esfera){
 	
  	return esfera;
 
+}
+
+
+//####################################################################
+//#############################Cuboid#################################
+//####################################################################
+Cuboid inicializaCuboid (Cuboid cubo){
+	cubo.v2=cubo.v1;
+	cubo.v2.x=cubo.v8.x;
+	cubo.v3=cubo.v1;
+	cubo.v3.y=cubo.v8.y;
+	cubo.v4=cubo.v1;
+	cubo.v4.xy=cubo.v8.xy;
+	cubo.v5=cubo.v1;
+	cubo.v5.z=cubo.v8.z;
+	cubo.v6=cubo.v1;
+	cubo.v6.xz=cubo.v8.xz;
+	cubo.v7=cubo.v1;
+	cubo.v7.yz=cubo.v8.yz;
+	
+	
+	float delta=0.1;
+	vec3 t1;
+	vec3 t2;
+  vec3 pIn;
+  vec3 pOut;
+	t1.x= (cubo.v1.x-camPos.x)/camDir.x;
+	t1.y= (cubo.v1.y-camPos.y)/camDir.y;
+	t1.z= (cubo.v1.z-camPos.z)/camDir.z;
+	t2.x= (cubo.v8.x-camPos.x)/camDir.x;
+	t2.y= (cubo.v8.y-camPos.y)/camDir.y;
+	t2.z= (cubo.v8.z-camPos.z)/camDir.z;
+
+	if (t1.x < t2.x) { //face 1357 antes da face 2468
+	    pIn = getP(t1.x);
+	    //face 1,3,5,7
+	    if (pIn.y > cubo.v1.y && pIn.y < cubo.v7.y && pIn.z > cubo.v1.z && pIn.z < cubo.v7.z) {
+	        cubo.o.intercepta = true;
+	        cubo.o.entra = t1.x;
+	        cubo.o.normalIn = normalize(cubo.v1 - cubo.v2);
+
+	    }
+	    pOut = getP(t2.x);
+	    //face 2,4,6,8
+	    if (pOut.y < cubo.v8.y && pOut.y > cubo.v2.y && pOut.z < cubo.v8.z && pOut.z > cubo.v2.z) {
+					cubo.o.sai=t2.x;
+					cubo.o.normalOut = normalize(cubo.v2 - cubo.v1);
+					
+			}
+	} else { //face 2468 antes da face 1357
+	    pOut = getP(t2.x);
+	    //face 2,4,6,8
+	    if (pOut.y < cubo.v8.y && pOut.y > cubo.v2.y && pOut.z < cubo.v8.z && pOut.z > cubo.v2.z) {
+	        cubo.o.intercepta = true;
+	        cubo.o.entra = t2.x;
+	        cubo.o.normalIn = normalize(cubo.v2 - cubo.v1);
+
+	    }
+	    pIn = getP(t1.x);
+	    //face 1,3,5,7
+	    if (pIn.y > cubo.v1.y && pIn.y < cubo.v7.y && pIn.z > cubo.v1.z && pIn.z < cubo.v7.z) {
+	        cubo.o.sai = t1.x;
+	        cubo.o.normalOut = normalize(cubo.v1 - cubo.v2);
+					 
+	    }
+	}
+	if (t1.y < t2.y) { //face 1256 antes da face 3478
+	    pIn = getP(t1.y);
+	    //face 1 , 2 , 5 , 6
+	    if (pIn.x > cubo.v1.x && pIn.x < cubo.v6.x && pIn.z > cubo.v1.z && pIn.z < cubo.v6.z) {
+	        cubo.o.intercepta = true;
+	        cubo.o.entra = t1.y;
+	        cubo.o.normalIn = normalize(cubo.v1 - cubo.v3);
+	    }
+	    pOut = getP(t2.y);
+			//face 3,4,7,8
+	    if (pOut.x < cubo.v8.x && pOut.x > cubo.v3.x && pOut.z < cubo.v8.z && pOut.z > cubo.v3.z) { 
+	        cubo.o.sai = t2.y;
+	        cubo.o.normalOut = normalize(cubo.v3 - cubo.v1);
+					 
+	    }
+	} else { //face 3478 antes da face 1256
+	    pOut = getP(t2.y);
+			//face 3,4,7,8
+	    if (pOut.x < cubo.v8.x && pOut.x > cubo.v3.x && pOut.z < cubo.v8.z && pOut.z > cubo.v3.z) { 
+	        cubo.o.intercepta = true;
+	        cubo.o.entra = t2.y;
+	        cubo.o.normalIn = normalize(cubo.v3 - cubo.v1);
+	    }
+	    pIn = getP(t1.y);
+	    //face 1 , 2 , 5 , 6
+	    if (pIn.x > cubo.v1.x && pIn.x < cubo.v6.x && pIn.z > cubo.v1.z && pIn.z < cubo.v6.z) {
+	        cubo.o.sai = t1.y;
+	        cubo.o.normalOut = normalize(cubo.v1 - cubo.v3);
+					 
+	    }
+	}
+	 if (t1.z < t2.z) { //face 1234 antes da face 5678
+	    pIn = getP(t1.z);
+			//face 1 , 2 , 3 , 4
+	    if (pIn.x > cubo.v1.x && pIn.x < cubo.v4.x && pIn.y > cubo.v1.y && pIn.y < cubo.v4.y) { 
+	        cubo.o.intercepta = true;
+	        cubo.o.entra = t1.z;
+	        cubo.o.normalIn = normalize(cubo.v1 - cubo.v5);
+	    }
+	    pOut = getP(t2.z);
+			//face 5,6,7,8
+	    if (pOut.x < cubo.v8.x && pOut.x > cubo.v5.x && pOut.y < cubo.v8.y && pOut.y > cubo.v5.y) { 
+	        cubo.o.sai = t2.z;
+	        cubo.o.normalOut = normalize(cubo.v5 - cubo.v1);
+					 
+	    }
+	} else { //face 5678 antes da face 1234
+	    pOut = getP(t2.z);
+			//face 5,6,7,8
+	    if (pOut.x < cubo.v8.x && pOut.x > cubo.v5.x && pOut.y < cubo.v8.y && pOut.y > cubo.v5.y) { 
+	        cubo.o.intercepta = true;
+	        cubo.o.entra = t2.z;
+	        cubo.o.normalIn = normalize(cubo.v5 - cubo.v1);
+	    }
+	    pIn = getP(t1.z);
+			//face 1 , 2 , 3 , 4
+	    if (pIn.x > cubo.v1.x && pIn.x < cubo.v4.x && pIn.y > cubo.v1.y && pIn.y < cubo.v4.y) { 
+	        cubo.o.sai = t1.z;
+	        cubo.o.normalOut = normalize(cubo.v1 - cubo.v5);
+					 
+	    }
+	}
+
+	return cubo;
 }
 
 //####################################################################
@@ -242,132 +380,6 @@ Objeto diferenca(Objeto obj_1, Objeto obj_2, bool final) { // obj_1 - obj_2
 }
 
 
-Cuboid inicializaCubo (Cuboid cubo){
-	cubo.v2=cubo.v1;
-	cubo.v2.x=cubo.v8.x;
-	cubo.v3=cubo.v1;
-	cubo.v3.y=cubo.v8.y;
-	cubo.v4=cubo.v1;
-	cubo.v4.xy=cubo.v8.xy;
-	cubo.v5=cubo.v1;
-	cubo.v5.z=cubo.v8.z;
-	cubo.v6=cubo.v1;
-	cubo.v6.xz=cubo.v8.xz;
-	cubo.v7=cubo.v1;
-	cubo.v7.yz=cubo.v8.yz;
-	
-	
-	float delta=0.1;
-	vec3 t1;
-	vec3 t2;
-  vec3 pIn;
-  vec3 pOut;
-	t1.x= (cubo.v1.x-camPos.x)/camDir.x;
-	t1.y= (cubo.v1.y-camPos.y)/camDir.y;
-	t1.z= (cubo.v1.z-camPos.z)/camDir.z;
-	t2.x= (cubo.v8.x-camPos.x)/camDir.x;
-	t2.y= (cubo.v8.y-camPos.y)/camDir.y;
-	t2.z= (cubo.v8.z-camPos.z)/camDir.z;
-
-	if (t1.x < t2.x) { //face 1357 antes da face 2468
-	    pIn = getP(t1.x);
-	    //face 1,3,5,7
-	    if (pIn.y > cubo.v1.y && pIn.y < cubo.v7.y && pIn.z > cubo.v1.z && pIn.z < cubo.v7.z) {
-	        cubo.o.intercepta = true;
-	        cubo.o.entra = t1.x;
-	        cubo.o.normalIn = normalize(cubo.v1 - cubo.v2);
-
-	    }
-	    pOut = getP(t2.x);
-	    //face 2,4,6,8
-	    if (pOut.y < cubo.v8.y && pOut.y > cubo.v2.y && pOut.z < cubo.v8.z && pOut.z > cubo.v2.z) {
-					cubo.o.sai=t2.x;
-					cubo.o.normalOut = normalize(cubo.v2 - cubo.v1);
-					
-			}
-	} else { //face 2468 antes da face 1357
-	    pOut = getP(t2.x);
-	    //face 2,4,6,8
-	    if (pOut.y < cubo.v8.y && pOut.y > cubo.v2.y && pOut.z < cubo.v8.z && pOut.z > cubo.v2.z) {
-	        cubo.o.intercepta = true;
-	        cubo.o.entra = t2.x;
-	        cubo.o.normalIn = normalize(cubo.v2 - cubo.v1);
-
-	    }
-	    pIn = getP(t1.x);
-	    //face 1,3,5,7
-	    if (pIn.y > cubo.v1.y && pIn.y < cubo.v7.y && pIn.z > cubo.v1.z && pIn.z < cubo.v7.z) {
-	        cubo.o.sai = t1.x;
-	        cubo.o.normalOut = normalize(cubo.v1 - cubo.v2);
-					 
-	    }
-	}
-	if (t1.y < t2.y) { //face 1256 antes da face 3478
-	    pIn = getP(t1.y);
-	    //face 1 , 2 , 5 , 6
-	    if (pIn.x > cubo.v1.x && pIn.x < cubo.v6.x && pIn.z > cubo.v1.z && pIn.z < cubo.v6.z) {
-	        cubo.o.intercepta = true;
-	        cubo.o.entra = t1.y;
-	        cubo.o.normalIn = normalize(cubo.v1 - cubo.v3);
-	    }
-	    pOut = getP(t2.y);
-			//face 3,4,7,8
-	    if (pOut.x < cubo.v8.x && pOut.x > cubo.v3.x && pOut.z < cubo.v8.z && pOut.z > cubo.v3.z) { 
-	        cubo.o.sai = t2.y;
-	        cubo.o.normalOut = normalize(cubo.v3 - cubo.v1);
-					 
-	    }
-	} else { //face 3478 antes da face 1256
-	    pOut = getP(t2.y);
-			//face 3,4,7,8
-	    if (pOut.x < cubo.v8.x && pOut.x > cubo.v3.x && pOut.z < cubo.v8.z && pOut.z > cubo.v3.z) { 
-	        cubo.o.intercepta = true;
-	        cubo.o.entra = t2.y;
-	        cubo.o.normalIn = normalize(cubo.v3 - cubo.v1);
-	    }
-	    pIn = getP(t1.y);
-	    //face 1 , 2 , 5 , 6
-	    if (pIn.x > cubo.v1.x && pIn.x < cubo.v6.x && pIn.z > cubo.v1.z && pIn.z < cubo.v6.z) {
-	        cubo.o.sai = t1.y;
-	        cubo.o.normalOut = normalize(cubo.v1 - cubo.v3);
-					 
-	    }
-	}
-	 if (t1.z < t2.z) { //face 1234 antes da face 5678
-	    pIn = getP(t1.z);
-			//face 1 , 2 , 3 , 4
-	    if (pIn.x > cubo.v1.x && pIn.x < cubo.v4.x && pIn.y > cubo.v1.y && pIn.y < cubo.v4.y) { 
-	        cubo.o.intercepta = true;
-	        cubo.o.entra = t1.z;
-	        cubo.o.normalIn = normalize(cubo.v1 - cubo.v5);
-	    }
-	    pOut = getP(t2.z);
-			//face 5,6,7,8
-	    if (pOut.x < cubo.v8.x && pOut.x > cubo.v5.x && pOut.y < cubo.v8.y && pOut.y > cubo.v5.y) { 
-	        cubo.o.sai = t2.z;
-	        cubo.o.normalOut = normalize(cubo.v5 - cubo.v1);
-					 
-	    }
-	} else { //face 5678 antes da face 1234
-	    pOut = getP(t2.z);
-			//face 5,6,7,8
-	    if (pOut.x < cubo.v8.x && pOut.x > cubo.v5.x && pOut.y < cubo.v8.y && pOut.y > cubo.v5.y) { 
-	        cubo.o.intercepta = true;
-	        cubo.o.entra = t2.z;
-	        cubo.o.normalIn = normalize(cubo.v5 - cubo.v1);
-	    }
-	    pIn = getP(t1.z);
-			//face 1 , 2 , 3 , 4
-	    if (pIn.x > cubo.v1.x && pIn.x < cubo.v4.x && pIn.y > cubo.v1.y && pIn.y < cubo.v4.y) { 
-	        cubo.o.sai = t1.z;
-	        cubo.o.normalOut = normalize(cubo.v1 - cubo.v5);
-					 
-	    }
-	}
-
-	return cubo;
-}
-
 Objeto escala(Objeto obj, float s){
 	obj.entra=0.0;
 	obj.sai=0.0;
@@ -379,7 +391,7 @@ void main(void){
 	cubo1.v1=vec3(-0.5,-0.5,-0.5);
 	cubo1.v8=vec3(0.5,0.5,0.5);
 	cubo1.o.cor=vec3(0.0,0.0,1.0);
-	cubo1 = inicializaCubo(cubo1);
+	cubo1 = inicializaCuboid(cubo1);
 
 	Esfera esfera1;
 	esfera1.centro=vec3(0.0,0.0,0.0);
@@ -388,9 +400,9 @@ void main(void){
 	esfera1 = inicializaEsfera(esfera1);
 
 	Esfera esfera2;
-	esfera2.centro=vec3(1.0,0.0,0.0);
-	esfera2.raio=0.7;
-	esfera2.o.cor=vec3(0.0,0.0,1.0);
+	esfera2.centro=vec3(-0.4,-0.4,0.4);
+	esfera2.raio=0.3;
+	esfera2.o.cor=vec3(1.0,0.0,0.0);
 	esfera2 = inicializaEsfera(esfera2);
 
 	Esfera esfera3;
@@ -411,5 +423,7 @@ void main(void){
 	esfera5.o.cor=vec3(0.0,1.0,1.0);
 	esfera5 = inicializaEsfera(esfera5);
 
-	Objeto obj_1=diferenca(esfera1.o,cubo1.o,true);
+	Objeto objeto1=diferenca(cubo1.o,esfera1.o,false);
+
+	objeto1=diferenca(objeto1,esfera2.o,true);
 }
