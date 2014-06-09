@@ -5,7 +5,15 @@ varying vec3 camDir;
 uniform sampler2D sampler2d0;
 uniform sampler2D sampler2d1;
 uniform sampler2D sampler2d2;
-
+uniform sampler2D sampler2d3;
+vec3 VERMELHO = vec3(1.0,0.0,0.0);
+vec3 VERDE = vec3(0.0,1.0,0.0);
+vec3 AZUL = vec3(0.0,0.0,1.0);
+vec3 BRANCO = vec3(1.0);
+vec3 PRETO = vec3(1.0,0.0,0.0);
+vec3 LARANJA = vec3(1.0,0.5,0.0);
+vec3 AMARELO = vec3(1.0,1.0,0.0);
+vec3 ROSA = vec3(1.0,0.0,1.0);
 struct Objeto {
     int intercepta; //Quantas vezes o raio intercepta o objeto
     float entra; //t quando o raio entra no objeto no ponto p=camPos+t*camDir
@@ -41,6 +49,13 @@ struct Cuboid {
     vec3 v8; //v oposto ao primeiro
     int texture;
     Objeto o; //Inofrmações de objeto da esfera
+};
+
+struct Cilindro {
+		vec3 centro;
+		float raio;
+		float altura;
+   Objeto o; //Inofrmações de objeto da esfera
 };
 
 vec3 getP(float t) {
@@ -79,6 +94,10 @@ vec3 getTexture(vec2 coord_texture, int n) {
     }
     if (n == 3) {
         cor = texture2D(sampler2d2, coord_texture).rgb;
+        return cor;
+    }
+    if (n == 4) {
+        cor = texture2D(sampler2d3, coord_texture).rgb;
         return cor;
     }
     return vec3(0.0);
@@ -130,6 +149,52 @@ Esfera inicializaEsfera(Esfera esfera, int texture) {
     }
 
     return esfera;
+
+}
+
+Objeto inicializaEsfera(vec3 centro,float raio, vec3 cor, int texture) {
+		 Esfera esfera;
+		 esfera.centro=centro;
+		 esfera.raio=raio;
+		 esfera.o.cor=cor;
+		 esfera.o.corInt=cor;
+    float a;
+    float b;
+    float c;
+    float delta;
+    float alpha;
+    float phi;
+    vec2 v1, v2;
+    a = dot(camDir, camDir);
+    b = dot(camDir, camPos - centro);
+    c = dot(camPos - centro, camPos - centro) - (raio * raio);
+    delta = b * b - a * c;
+
+    float tIn = (-b - sqrt(delta)) / a;
+    float tOut = (-b + sqrt(delta)) / a;
+    esfera.o.entra = tIn;
+    esfera.o.sai = tOut;
+    vec3 pIn = camPos + tIn * camDir;
+    vec3 pOut = camPos + tOut * camDir;
+    esfera.o.normalIn = normalize(pIn - centro);
+    esfera.o.normalOut = normalize(pOut - centro);
+    //delta < 0 está fora da esfera
+    if (delta > 0.0) {
+        esfera.o.intercepta = 1;
+    } else {
+        esfera.o.intercepta = 0;
+    }
+    v1 = vec2(raio, 0) - centro.xy;
+    v2 = pIn.xy - centro.xy;
+    if (texture == 1) {
+        alpha = acos(dot(v1, v2));
+        v1 = vec2(raio, 0) - centro.yz;
+        v2 = pIn.yz - centro.yz;
+        phi = acos(dot(v1, v2));
+        esfera.o.cor = getTexture(vec2(alpha, phi), 1);
+    }
+
+    return esfera.o;
 
 }
 
@@ -269,6 +334,143 @@ Cuboid inicializaCuboid(Cuboid cuboid, int texture) {
     }
 
     return cuboid;
+}
+//##################################Cubo2
+Objeto inicializaCuboid(vec3 v1, vec3 v8, vec3 cor, int texture) {
+		Cuboid cuboid;
+		cuboid.v1=v1;
+		cuboid.v8=v8;
+		cuboid.o.cor=cor;
+    cuboid.v2 = cuboid.v1;
+    cuboid.v2.x = cuboid.v8.x;
+    cuboid.v3 = cuboid.v1;
+    cuboid.v3.y = cuboid.v8.y;
+    cuboid.v4 = cuboid.v1;
+    cuboid.v4.xy = cuboid.v8.xy;
+    cuboid.v5 = cuboid.v1;
+    cuboid.v5.z = cuboid.v8.z;
+    cuboid.v6 = cuboid.v1;
+    cuboid.v6.xz = cuboid.v8.xz;
+    cuboid.v7 = cuboid.v1;
+    cuboid.v7.yz = cuboid.v8.yz;
+
+    cuboid.o.intercepta = 0;
+    cuboid.o.corInt = cuboid.o.cor;
+
+    float delta = 0.1;
+    vec3 t1;
+    vec3 t2;
+    vec3 pIn;
+    vec3 pOut;
+    t1.x = (cuboid.v1.x - camPos.x) / camDir.x;
+    t1.y = (cuboid.v1.y - camPos.y) / camDir.y;
+    t1.z = (cuboid.v1.z - camPos.z) / camDir.z;
+    t2.x = (cuboid.v8.x - camPos.x) / camDir.x;
+    t2.y = (cuboid.v8.y - camPos.y) / camDir.y;
+    t2.z = (cuboid.v8.z - camPos.z) / camDir.z;
+
+    if (t1.x < t2.x) { //face 1357 antes da face 2468
+        pIn = getP(t1.x);
+        //face 1,3,5,7
+        if (pIn.y > cuboid.v1.y && pIn.y < cuboid.v7.y && pIn.z > cuboid.v1.z && pIn.z < cuboid.v7.z) {
+            cuboid.o.intercepta = 1;
+            cuboid.o.entra = t1.x;
+            cuboid.o.normalIn = normalize(cuboid.v1 - cuboid.v2);
+            if (texture > 0)
+                cuboid.o.cor = getTexture(pIn.yz, texture);
+        }
+        pOut = getP(t2.x);
+        //face 2,4,6,8
+        if (pOut.y < cuboid.v8.y && pOut.y > cuboid.v2.y && pOut.z < cuboid.v8.z && pOut.z > cuboid.v2.z) {
+            cuboid.o.sai = t2.x;
+            cuboid.o.normalOut = normalize(cuboid.v2 - cuboid.v1);
+
+        }
+    } else { //face 2468 antes da face 1357
+        pOut = getP(t2.x);
+        //face 2,4,6,8
+        if (pOut.y < cuboid.v8.y && pOut.y > cuboid.v2.y && pOut.z < cuboid.v8.z && pOut.z > cuboid.v2.z) {
+            cuboid.o.intercepta = 1;
+            cuboid.o.entra = t2.x;
+            cuboid.o.normalIn = normalize(cuboid.v2 - cuboid.v1);
+            if (texture > 0)
+                cuboid.o.cor = getTexture(pOut.yz, texture);
+        }
+        pIn = getP(t1.x);
+        //face 1,3,5,7
+        if (pIn.y > cuboid.v1.y && pIn.y < cuboid.v7.y && pIn.z > cuboid.v1.z && pIn.z < cuboid.v7.z) {
+            cuboid.o.sai = t1.x;
+            cuboid.o.normalOut = normalize(cuboid.v1 - cuboid.v2);
+        }
+    }
+    if (t1.y < t2.y) { //face 1256 antes da face 3478
+        pIn = getP(t1.y);
+        //face 1 , 2 , 5 , 6
+        if (pIn.x > cuboid.v1.x && pIn.x < cuboid.v6.x && pIn.z > cuboid.v1.z && pIn.z < cuboid.v6.z) {
+            cuboid.o.intercepta = 1;
+            cuboid.o.entra = t1.y;
+            cuboid.o.normalIn = normalize(cuboid.v1 - cuboid.v3);
+            if (texture > 0)
+                cuboid.o.cor = getTexture(pIn.xz, texture);
+        }
+        pOut = getP(t2.y);
+        //face 3,4,7,8
+        if (pOut.x < cuboid.v8.x && pOut.x > cuboid.v3.x && pOut.z < cuboid.v8.z && pOut.z > cuboid.v3.z) {
+            cuboid.o.sai = t2.y;
+            cuboid.o.normalOut = normalize(cuboid.v3 - cuboid.v1);
+        }
+    } else { //face 3478 antes da face 1256
+        pOut = getP(t2.y);
+        //face 3,4,7,8
+        if (pOut.x < cuboid.v8.x && pOut.x > cuboid.v3.x && pOut.z < cuboid.v8.z && pOut.z > cuboid.v3.z) {
+            cuboid.o.intercepta = 1;
+            cuboid.o.entra = t2.y;
+            cuboid.o.normalIn = normalize(cuboid.v3 - cuboid.v1);
+            if (texture > 0)
+                cuboid.o.cor = getTexture(pOut.xz, texture);
+        }
+        pIn = getP(t1.y);
+        //face 1 , 2 , 5 , 6
+        if (pIn.x > cuboid.v1.x && pIn.x < cuboid.v6.x && pIn.z > cuboid.v1.z && pIn.z < cuboid.v6.z) {
+            cuboid.o.sai = t1.y;
+            cuboid.o.normalOut = normalize(cuboid.v1 - cuboid.v3);
+        }
+    }
+    if (t1.z < t2.z) { //face 1234 antes da face 5678
+        pIn = getP(t1.z);
+        //face 1 , 2 , 3 , 4
+        if (pIn.x > cuboid.v1.x && pIn.x < cuboid.v4.x && pIn.y > cuboid.v1.y && pIn.y < cuboid.v4.y) {
+            cuboid.o.intercepta = 1;
+            cuboid.o.entra = t1.z;
+            cuboid.o.normalIn = normalize(cuboid.v1 - cuboid.v5);
+            if (texture > 0)
+                cuboid.o.cor = getTexture(pIn.xy, texture);
+        }
+        pOut = getP(t2.z);
+        //face 5,6,7,8
+        if (pOut.x < cuboid.v8.x && pOut.x > cuboid.v5.x && pOut.y < cuboid.v8.y && pOut.y > cuboid.v5.y) {
+            cuboid.o.sai = t2.z;
+            cuboid.o.normalOut = normalize(cuboid.v5 - cuboid.v1);
+        }
+    } else { //face 5678 antes da face 1234
+        pOut = getP(t2.z);
+        //face 5,6,7,8
+        if (pOut.x < cuboid.v8.x && pOut.x > cuboid.v5.x && pOut.y < cuboid.v8.y && pOut.y > cuboid.v5.y) {
+            cuboid.o.intercepta = 1;
+            cuboid.o.entra = t2.z;
+            cuboid.o.normalIn = normalize(cuboid.v5 - cuboid.v1);
+            if (texture > 0)
+                cuboid.o.cor = getTexture(pOut.xy, texture);
+        }
+        pIn = getP(t1.z);
+        //face 1 , 2 , 3 , 4
+        if (pIn.x > cuboid.v1.x && pIn.x < cuboid.v4.x && pIn.y > cuboid.v1.y && pIn.y < cuboid.v4.y) {
+            cuboid.o.sai = t1.z;
+            cuboid.o.normalOut = normalize(cuboid.v1 - cuboid.v5);
+        }
+    }
+
+    return cuboid.o;
 }
 
 //####################################################################
@@ -453,19 +655,15 @@ Cuboid escalaCuboid(Cuboid cuboid, vec3 s) {
     return cuboid;
 }
 void desenho1() {
-    Cuboid limite;
-    limite.v1 = vec3(-1.0, -1.0, -1.0);
-    limite.v8 = vec3(1.0, 1.0, 1.0);
-    limite.o.cor = vec3(1.0, 1.0, 1.0);
-    limite = inicializaCuboid(limite, 0);
 
-    Cuboid cubo1;
-    cubo1.v1 = vec3(-0.9, -0.9, -0.9);
-    cubo1.v8 = vec3(0.9, 0.9, 0.9);
-    cubo1.o.cor = vec3(0.0, 0.0, 1.0);
-    cubo1 = escalaCuboid(cubo1, vec3(1.0, 1.0, 0.2));
-    cubo1 = inicializaCuboid(cubo1, 2);
+		 Objeto limite = inicializaCuboid(vec3(-1.0, -1.0, -1.0),vec3(1.0, 1.0, 1.0),vec3(1.0, 1.0, 1.0),0);
 
+    Cuboid cb;
+    cb.v1 = vec3(-0.9, -0.9, -0.9);
+    cb.v8 = vec3(0.9, 0.9, 0.9);
+    cb.o.cor = vec3(0.0, 0.0, 1.0);
+    cb = escalaCuboid(cb, vec3(1.0, 1.0, 0.2));
+    Objeto cubo1 = (inicializaCuboid(cb, 2)).o;
 
     Cuboid cubo2;
     cubo2.v1 = vec3(-0.9, -0.9, -0.05);
@@ -505,7 +703,7 @@ void desenho1() {
     esfera5.o.cor = vec3(1.0, 1.0, 0.0);
     esfera5 = inicializaEsfera(esfera5, 0);
 
-    Objeto objeto1 = uniao(cubo1.o, esfera1.o);
+    Objeto objeto1 = uniao(cubo1, esfera1.o);
 
     Objeto objeto2 = intersecao(esfera2.o, cubo2.o);
 
@@ -517,7 +715,7 @@ void desenho1() {
 
     objeto2 = uniao(objeto2, esfera5.o);
 
-    Objeto objetoFinal = intersecao(objeto2, limite.o);
+    Objeto objetoFinal = intersecao(objeto2, limite);
     mostrar(objetoFinal);
 }
 
@@ -586,6 +784,15 @@ void snowMan(){
 
 		mostrar(objetoFinal);
 }
+void saturn(){
+	Objeto saturno=inicializaEsfera(vec3(0.0,0.0,0.0),0.6,vec3(0.0,0.0,0.0),1);
+	Objeto esfera1=inicializaEsfera(vec3(0.0,0.0,0.0),0.9,vec3(1.0,0.7,0.4),0);
+	Objeto esfera2=inicializaEsfera(vec3(0.0,0.0,0.0),0.6,vec3(1.0,0.7,0.4),0);
+	Objeto plano=inicializaCuboid(vec3(-1.0,-1.0,-0.01),vec3(1.0,1.0,0.01),vec3(1.0,0.7,0.4),0);
+	Objeto aneis=intersecao(plano,diferenca(esfera1,esfera2));
+	
+	mostrar(uniao(aneis,saturno));
+}
 void desenho0(){
     Cuboid limite;
     limite.v1 = vec3(-1.0, -1.0, -1.0);
@@ -595,13 +802,15 @@ void desenho0(){
 		mostrar(limite.o);
 }
 void main(void) {
-	int desenhoN=2;
+	int desenhoN=3;
 	switch(desenhoN){
 		case 1:
     desenho1();
 		break;
 		case 2:
     snowMan();
+		case 3:
+    saturn();
 		break;
 		default:
 			desenho0();
